@@ -3,8 +3,12 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography } from '@/src/constants/theme';
 import { Strings } from '@/src/constants/strings.fr';
+import { useOfflineSync } from '@/src/hooks/useOfflineSync';
 
 export default function TabLayout() {
+  // Synchronise les séances hors-ligne au retour réseau
+  useOfflineSync();
+
   return (
     <Tabs
       screenOptions={{
