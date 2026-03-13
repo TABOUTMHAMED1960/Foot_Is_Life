@@ -15,6 +15,8 @@ export interface PipelineDeps {
   ) => Promise<boolean>;
   analyze: (sessionId: string) => Promise<AnalysisResult | null>;
   saveAnalysis: (sessionId: string, analysis: AnalysisResult) => Promise<void>;
+  /** Fallback local quand Firestore échoue. */
+  saveLocal?: (session: Session, analysis: AnalysisResult | null) => Promise<void>;
   onStep?: (step: number) => void;
 }
 
@@ -24,6 +26,8 @@ export interface PipelineResult {
   result?: AnalysisResult;
   error?: string;
   warning?: string;
+  /** true si la séance a été sauvegardée localement en fallback. */
+  savedOffline?: boolean;
 }
 
 export async function runAnalysisPipeline(
@@ -38,6 +42,7 @@ export async function runAnalysisPipeline(
     uploadVideos,
     analyze,
     saveAnalysis,
+    saveLocal,
     onStep,
   } = deps;
 
@@ -54,22 +59,26 @@ export async function runAnalysisPipeline(
     analysis: null,
   };
 
+  let firestoreAvailable = true;
+
   try {
     await saveSession(session);
   } catch {
-    return {
-      success: false,
-      sessionId,
-      error: Strings.session.analyzingErrorSave,
-    };
+    firestoreAvailable = false;
+    // Pas de fallback local ici — on continue l'analyse d'abord
   }
 
   // ── Étape 1 : Upload des vidéos ──
   onStep?.(0);
   let warning: string | undefined;
 
-  const uploadOk = await uploadVideos(sessionId, frontVideo, backVideo);
-  if (!uploadOk) {
+  if (firestoreAvailable) {
+    const uploadOk = await uploadVideos(sessionId, frontVideo, backVideo);
+    if (!uploadOk) {
+      warning = Strings.session.analyzingUploadFailed;
+    }
+  } else {
+    // Pas d'upload si Firestore est down (le document n'existe pas)
     warning = Strings.session.analyzingUploadFailed;
   }
 
@@ -96,10 +105,26 @@ export async function runAnalysisPipeline(
 
   // ── Étape 3 : Sauvegarde de l'analyse ──
   onStep?.(2);
-  try {
-    await saveAnalysis(sessionId, result);
-  } catch {
-    // Non bloquant — l'utilisateur verra ses résultats
+  let savedOffline = false;
+
+  if (firestoreAvailable) {
+    try {
+      await saveAnalysis(sessionId, result);
+    } catch {
+      // Firestore a échoué à la sauvegarde de l'analyse — fallback local
+      firestoreAvailable = false;
+    }
+  }
+
+  if (!firestoreAvailable && saveLocal) {
+    try {
+      await saveLocal(session, result);
+      savedOffline = true;
+      warning = Strings.offline.savedLocally;
+    } catch {
+      warning = Strings.session.analyzingErrorSave;
+    }
+  } else if (!firestoreAvailable) {
     warning = Strings.session.analyzingErrorSave;
   }
 
@@ -110,5 +135,6 @@ export async function runAnalysisPipeline(
     sessionId,
     result,
     warning,
+    savedOffline,
   };
 }

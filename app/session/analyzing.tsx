@@ -13,6 +13,7 @@ import { useSession } from '@/src/hooks/useSession';
 import { useSessionStore } from '@/src/stores/sessionStore';
 import { useAuthStore } from '@/src/stores/authStore';
 import { runAnalysisPipeline } from '@/src/services/analysis/pipeline';
+import { saveSessionLocally } from '@/src/services/local/offlineStore';
 
 /**
  * Étapes du flux d'analyse :
@@ -63,6 +64,7 @@ export default function AnalyzingScreen() {
       uploadVideos,
       analyze,
       saveAnalysis,
+      saveLocal: saveSessionLocally,
       onStep: (s) => setStep(s),
     });
 

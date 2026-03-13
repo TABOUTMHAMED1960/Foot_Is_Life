@@ -174,6 +174,13 @@ export const Strings = {
     overallTiming: 'Timing global',
   },
 
+  offline: {
+    savedLocally: 'La séance a été sauvegardée sur ton appareil. Elle sera synchronisée dès que la connexion sera rétablie.',
+    pendingBanner: 'séance(s) en attente de synchronisation',
+    syncSuccess: 'Séance synchronisée avec succès.',
+    syncError: 'Impossible de synchroniser la séance. Réessaie plus tard.',
+  },
+
   common: {
     cancel: 'Annuler',
     confirm: 'Confirmer',

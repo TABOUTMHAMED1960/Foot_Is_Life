@@ -159,18 +159,47 @@ describe('runAnalysisPipeline', () => {
 
   // ── Échecs ──
 
-  it('échec saveSession : retourne une erreur et ne continue pas', async () => {
+  it('échec saveSession : continue l\'analyse sans upload', async () => {
     const deps = createMockDeps({
       saveSession: jest.fn().mockRejectedValue(new Error('Firestore down')),
     });
 
     const result = await runAnalysisPipeline(deps);
 
-    expect(result.success).toBe(false);
-    expect(result.error).toBe(Strings.session.analyzingErrorSave);
+    expect(result.success).toBe(true);
+    expect(result.result).toBe(mockAnalysisResult);
+    // Upload sauté car Firestore indisponible
     expect(deps.uploadVideos).not.toHaveBeenCalled();
-    expect(deps.analyze).not.toHaveBeenCalled();
-    expect(deps.saveAnalysis).not.toHaveBeenCalled();
+    // Analyse et sauvegarde continuent
+    expect(deps.analyze).toHaveBeenCalledTimes(1);
+    expect(result.warning).toBeDefined();
+  });
+
+  it('échec saveSession + saveLocal fourni : sauvegarde offline', async () => {
+    const saveLocal = jest.fn().mockResolvedValue(undefined);
+    const deps = createMockDeps({
+      saveSession: jest.fn().mockRejectedValue(new Error('Firestore down')),
+      saveLocal,
+    });
+
+    const result = await runAnalysisPipeline(deps);
+
+    expect(result.success).toBe(true);
+    expect(result.savedOffline).toBe(true);
+    expect(result.warning).toBe(Strings.offline.savedLocally);
+    expect(saveLocal).toHaveBeenCalledTimes(1);
+  });
+
+  it('échec saveSession sans saveLocal : warning sauvegarde', async () => {
+    const deps = createMockDeps({
+      saveSession: jest.fn().mockRejectedValue(new Error('Firestore down')),
+    });
+
+    const result = await runAnalysisPipeline(deps);
+
+    expect(result.success).toBe(true);
+    expect(result.savedOffline).toBeFalsy();
+    expect(result.warning).toBe(Strings.session.analyzingErrorSave);
   });
 
   it('échec analyze (throw) : retourne une erreur et ne sauvegarde pas', async () => {
@@ -199,7 +228,7 @@ describe('runAnalysisPipeline', () => {
     expect(deps.saveAnalysis).not.toHaveBeenCalled();
   });
 
-  it('échec saveAnalysis : succès avec warning (non bloquant)', async () => {
+  it('échec saveAnalysis sans saveLocal : succès avec warning', async () => {
     const deps = createMockDeps({
       saveAnalysis: jest.fn().mockRejectedValue(new Error('Firestore write failed')),
     });
@@ -209,6 +238,21 @@ describe('runAnalysisPipeline', () => {
     expect(result.success).toBe(true);
     expect(result.result).toBe(mockAnalysisResult);
     expect(result.warning).toBe(Strings.session.analyzingErrorSave);
+  });
+
+  it('échec saveAnalysis + saveLocal fourni : fallback offline', async () => {
+    const saveLocal = jest.fn().mockResolvedValue(undefined);
+    const deps = createMockDeps({
+      saveAnalysis: jest.fn().mockRejectedValue(new Error('Firestore write failed')),
+      saveLocal,
+    });
+
+    const result = await runAnalysisPipeline(deps);
+
+    expect(result.success).toBe(true);
+    expect(result.savedOffline).toBe(true);
+    expect(result.warning).toBe(Strings.offline.savedLocally);
+    expect(saveLocal).toHaveBeenCalledTimes(1);
   });
 
   it('échec uploadVideos : succès avec warning', async () => {

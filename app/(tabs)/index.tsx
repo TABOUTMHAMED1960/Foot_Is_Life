@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -10,12 +10,19 @@ import { useAuthStore } from '@/src/stores/authStore';
 import { useSession } from '@/src/hooks/useSession';
 import { usePlayerStats } from '@/src/hooks/usePlayerStats';
 import { formatScore } from '@/src/utils/formatters';
+import { getPendingCount } from '@/src/services/local/offlineStore';
 
 export default function HomeScreen() {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const { sessions, isLoading } = useSession();
   const stats = usePlayerStats(sessions);
+
+  const [pendingCount, setPendingCount] = useState(0);
+
+  useEffect(() => {
+    getPendingCount().then(setPendingCount);
+  }, [sessions]);
 
   const hasSessions = stats.totalSessions > 0;
   const lastScore = sessions.length > 0 && sessions[0].analysis
@@ -35,6 +42,15 @@ export default function HomeScreen() {
           </Text>
           <Text style={styles.subtitle}>{Strings.app.tagline}</Text>
         </View>
+
+        {/* Bannière hors-ligne */}
+        {pendingCount > 0 && (
+          <Card style={styles.offlineBanner}>
+            <Text style={styles.offlineBannerText}>
+              {pendingCount} {Strings.offline.pendingBanner}
+            </Text>
+          </Card>
+        )}
 
         {/* Stats rapides */}
         <View style={styles.statsRow}>
@@ -197,6 +213,17 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     marginTop: Spacing.sm,
     textAlign: 'center',
+  },
+  offlineBanner: {
+    backgroundColor: Colors.warningLight,
+    marginBottom: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  offlineBannerText: {
+    ...Typography.caption,
+    color: Colors.warning,
+    textAlign: 'center',
+    fontWeight: '600',
   },
   startButton: {
     marginBottom: Spacing.xl,
