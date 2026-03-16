@@ -127,6 +127,8 @@ export const Strings = {
     shareDefects: 'À améliorer',
     shareMotivation: 'La progression passe par la répétition !',
     shareFooter: 'Analysé avec Foot Is Life',
+    shareImage: 'Partager en image',
+    shareText: 'Partager en texte',
     disclaimer: '⚠️ Cette analyse est une estimation simplifiée basée sur les métadonnées de ta vidéo. Elle ne remplace pas l\'avis d\'un coach professionnel.',
   },
 
@@ -152,6 +154,7 @@ export const Strings = {
     frequentDefects: 'Défauts les plus fréquents',
     priorityAxes: 'Axes prioritaires',
     noData: 'Pas assez de données pour afficher la progression.',
+    oneSessionHint: 'Fais une deuxième séance pour voir ta courbe de progression !',
   },
 
   scores: {

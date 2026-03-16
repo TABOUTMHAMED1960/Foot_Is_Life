@@ -1,7 +1,9 @@
-import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, Share } from 'react-native';
+import React, { useMemo, useRef, useState, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, Share, Platform } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import ViewShot, { captureRef } from 'react-native-view-shot';
+import * as Sharing from 'expo-sharing';
 import { Colors, Typography, Spacing } from '@/src/constants/theme';
 import { Strings } from '@/src/constants/strings.fr';
 import { Button } from '@/src/components/ui/Button';
@@ -13,6 +15,7 @@ import { StrengthsList } from '@/src/components/analysis/StrengthsList';
 import { DefectsList } from '@/src/components/analysis/DefectsList';
 import { ExercisesList } from '@/src/components/analysis/ExercisesList';
 import { TipsList } from '@/src/components/analysis/TipsList';
+import { ShareCard } from '@/src/components/analysis/ShareCard';
 import { AnalysisResult } from '@/src/types/analysis';
 import { useSessionStore } from '@/src/stores/sessionStore';
 import { buildShareText } from '@/src/utils/formatters';
@@ -21,6 +24,8 @@ export default function ResultsScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ analysisData?: string }>();
   const { resetDraft } = useSessionStore();
+  const shareCardRef = useRef<ViewShot>(null);
+  const [isCapturing, setIsCapturing] = useState(false);
 
   const analysis: AnalysisResult | null = useMemo(() => {
     if (params.analysisData) {
@@ -81,7 +86,7 @@ export default function ResultsScreen() {
     { label: Strings.scores.overallTiming, score: analysis.subScores.common.overallTiming },
   ];
 
-  const handleShare = async () => {
+  const handleShareText = async () => {
     try {
       const text = buildShareText(analysis);
       await Share.share({ message: text });
@@ -89,6 +94,33 @@ export default function ResultsScreen() {
       // Partage annulé ou échoué — rien à faire
     }
   };
+
+  const handleShareImage = useCallback(async () => {
+    if (isCapturing) return;
+    setIsCapturing(true);
+    try {
+      const uri = await captureRef(shareCardRef, {
+        format: 'png',
+        quality: 1,
+        result: 'tmpfile',
+      });
+
+      const canShare = await Sharing.isAvailableAsync();
+      if (canShare) {
+        await Sharing.shareAsync(uri, {
+          mimeType: 'image/png',
+          dialogTitle: Strings.results.shareTitle,
+        });
+      } else {
+        // Fallback texte si le partage de fichier n'est pas dispo
+        await handleShareText();
+      }
+    } catch {
+      // Capture ou partage échoué — fallback silencieux
+    } finally {
+      setIsCapturing(false);
+    }
+  }, [analysis, isCapturing]);
 
   const handleNewSession = () => {
     resetDraft();
@@ -102,6 +134,15 @@ export default function ResultsScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
+      {/* Carte de partage hors-écran pour capture */}
+      <View style={styles.offscreen} pointerEvents="none">
+        <ViewShot ref={shareCardRef} options={{ format: 'png', quality: 1 }}>
+          <View style={styles.captureWrapper}>
+            <ShareCard analysis={analysis} />
+          </View>
+        </ViewShot>
+      </View>
+
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -181,10 +222,18 @@ export default function ResultsScreen() {
         {/* Actions */}
         <View style={styles.actions}>
           <Button
-            title={Strings.results.share}
+            title={Strings.results.shareImage}
             variant="secondary"
-            onPress={handleShare}
+            onPress={handleShareImage}
+            loading={isCapturing}
             fullWidth
+          />
+          <Button
+            title={Strings.results.shareText}
+            variant="outline"
+            onPress={handleShareText}
+            fullWidth
+            style={styles.actionSpacing}
           />
           <Button
             title={Strings.results.newSession}
@@ -194,7 +243,7 @@ export default function ResultsScreen() {
           />
           <Button
             title={Strings.results.backToHome}
-            variant="outline"
+            variant="ghost"
             onPress={handleBackToHome}
             fullWidth
             style={styles.actionSpacing}
@@ -260,5 +309,15 @@ const styles = StyleSheet.create({
   errorText: {
     ...Typography.body,
     color: Colors.textSecondary,
+  },
+  // Off-screen capture zone
+  offscreen: {
+    position: 'absolute',
+    left: -9999,
+    top: 0,
+  },
+  captureWrapper: {
+    backgroundColor: Colors.background,
+    padding: Spacing.md,
   },
 });

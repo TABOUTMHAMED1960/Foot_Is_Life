@@ -56,7 +56,8 @@
         {
           "photosPermission": "Foot Is Life a besoin d'accéder à ta photothèque pour importer une vidéo de frappe."
         }
-      ]
+      ],
+      "expo-sharing"
     ],
     "experiments": {
       "typedRoutes": true
