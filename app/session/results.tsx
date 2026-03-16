@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, Share, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Share } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ViewShot, { captureRef } from 'react-native-view-shot';
@@ -39,6 +39,52 @@ export default function ResultsScreen() {
     return null;
   }, [params.analysisData]);
 
+  const handleShareText = useCallback(async () => {
+    if (!analysis) return;
+    try {
+      const text = buildShareText(analysis);
+      await Share.share({ message: text });
+    } catch {
+      // Partage annulé ou échoué — rien à faire
+    }
+  }, [analysis]);
+
+  const handleShareImage = useCallback(async () => {
+    if (isCapturing || !analysis) return;
+    setIsCapturing(true);
+    try {
+      const uri = await captureRef(shareCardRef, {
+        format: 'png',
+        quality: 1,
+        result: 'tmpfile',
+      });
+
+      const canShare = await Sharing.isAvailableAsync();
+      if (canShare) {
+        await Sharing.shareAsync(uri, {
+          mimeType: 'image/png',
+          dialogTitle: Strings.results.shareTitle,
+        });
+      } else {
+        await handleShareText();
+      }
+    } catch {
+      // Capture ou partage échoué — fallback silencieux
+    } finally {
+      setIsCapturing(false);
+    }
+  }, [analysis, isCapturing, handleShareText]);
+
+  const handleNewSession = useCallback(() => {
+    resetDraft();
+    router.replace('/session/choose-mode');
+  }, [resetDraft, router]);
+
+  const handleBackToHome = useCallback(() => {
+    resetDraft();
+    router.replace('/(tabs)');
+  }, [resetDraft, router]);
+
   if (!analysis) {
     return (
       <SafeAreaView style={styles.container}>
@@ -46,10 +92,7 @@ export default function ResultsScreen() {
           <Text style={styles.errorText}>Aucune analyse disponible.</Text>
           <Button
             title={Strings.results.backToHome}
-            onPress={() => {
-              resetDraft();
-              router.replace('/(tabs)');
-            }}
+            onPress={handleBackToHome}
           />
         </View>
       </SafeAreaView>
@@ -85,52 +128,6 @@ export default function ResultsScreen() {
     { label: Strings.scores.postStrikeBalance, score: analysis.subScores.common.postStrikeBalance },
     { label: Strings.scores.overallTiming, score: analysis.subScores.common.overallTiming },
   ];
-
-  const handleShareText = async () => {
-    try {
-      const text = buildShareText(analysis);
-      await Share.share({ message: text });
-    } catch {
-      // Partage annulé ou échoué — rien à faire
-    }
-  };
-
-  const handleShareImage = useCallback(async () => {
-    if (isCapturing) return;
-    setIsCapturing(true);
-    try {
-      const uri = await captureRef(shareCardRef, {
-        format: 'png',
-        quality: 1,
-        result: 'tmpfile',
-      });
-
-      const canShare = await Sharing.isAvailableAsync();
-      if (canShare) {
-        await Sharing.shareAsync(uri, {
-          mimeType: 'image/png',
-          dialogTitle: Strings.results.shareTitle,
-        });
-      } else {
-        // Fallback texte si le partage de fichier n'est pas dispo
-        await handleShareText();
-      }
-    } catch {
-      // Capture ou partage échoué — fallback silencieux
-    } finally {
-      setIsCapturing(false);
-    }
-  }, [analysis, isCapturing]);
-
-  const handleNewSession = () => {
-    resetDraft();
-    router.replace('/session/choose-mode');
-  };
-
-  const handleBackToHome = () => {
-    resetDraft();
-    router.replace('/(tabs)');
-  };
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -310,7 +307,6 @@ const styles = StyleSheet.create({
     ...Typography.body,
     color: Colors.textSecondary,
   },
-  // Off-screen capture zone
   offscreen: {
     position: 'absolute',
     left: -9999,

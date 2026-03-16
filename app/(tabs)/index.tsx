@@ -15,7 +15,7 @@ import { getPendingCount } from '@/src/services/local/offlineStore';
 export default function HomeScreen() {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
-  const { sessions, isLoading } = useSession();
+  const { sessions } = useSession();
   const stats = usePlayerStats(sessions);
 
   const [pendingCount, setPendingCount] = useState(0);

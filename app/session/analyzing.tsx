@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors, Typography, Spacing, BorderRadius } from '@/src/constants/theme';
+import { Colors, Typography, Spacing } from '@/src/constants/theme';
 import { Strings } from '@/src/constants/strings.fr';
 import { LoadingSpinner } from '@/src/components/ui/LoadingSpinner';
 import { ProgressBar } from '@/src/components/ui/ProgressBar';
@@ -32,7 +32,7 @@ const STEP_LABELS = [
 export default function AnalyzingScreen() {
   const router = useRouter();
   const { analyze } = useAnalysis();
-  const { uploadVideos, progress: uploadProgress, errors: uploadErrors } = useVideoUpload();
+  const { uploadVideos, progress: uploadProgress } = useVideoUpload();
   const { saveSession, saveAnalysis } = useSession();
   const { draft, resetDraft } = useSessionStore();
   const user = useAuthStore((s) => s.user);

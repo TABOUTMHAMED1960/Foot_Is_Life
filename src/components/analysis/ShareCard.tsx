@@ -1,9 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Colors, Typography, Spacing, BorderRadius } from '@/src/constants/theme';
+import { Colors, Typography, Spacing, BorderRadius, getScoreColor } from '@/src/constants/theme';
 import { Strings } from '@/src/constants/strings.fr';
 import { AnalysisResult } from '@/src/types/analysis';
-import { getScoreColor } from '@/src/constants/theme';
 
 interface ShareCardProps {
   analysis: AnalysisResult;

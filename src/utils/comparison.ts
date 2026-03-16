@@ -46,7 +46,7 @@ export function compareAnalyses(
   );
 
   // Sous-scores communs
-  const commonKeys: Array<{ key: keyof typeof before.subScores.common; label: string }> = [
+  const commonKeys: { key: keyof typeof before.subScores.common; label: string }[] = [
     { key: 'approachAngle', label: Strings.scores.approachAngle },
     { key: 'supportFootPosition', label: Strings.scores.supportFootPosition },
     { key: 'torsoOrientation', label: Strings.scores.torsoOrientation },
@@ -63,7 +63,7 @@ export function compareAnalyses(
   // Sous-scores face
   let frontScores: ScoreDelta[] = [];
   if (before.subScores.front && after.subScores.front) {
-    const frontKeys: Array<{ key: keyof NonNullable<typeof before.subScores.front>; label: string }> = [
+    const frontKeys: { key: keyof NonNullable<typeof before.subScores.front>; label: string }[] = [
       { key: 'upperBodyAlignment', label: Strings.scores.upperBodyAlignment },
       { key: 'stability', label: Strings.scores.stability },
       { key: 'torsoOpenness', label: Strings.scores.torsoOpenness },
@@ -78,7 +78,7 @@ export function compareAnalyses(
   // Sous-scores dos
   let backScores: ScoreDelta[] = [];
   if (before.subScores.back && after.subScores.back) {
-    const backKeys: Array<{ key: keyof NonNullable<typeof before.subScores.back>; label: string }> = [
+    const backKeys: { key: keyof NonNullable<typeof before.subScores.back>; label: string }[] = [
       { key: 'approachTrajectory', label: Strings.scores.approachTrajectory },
       { key: 'supportFootPlacement', label: Strings.scores.supportFootPlacement },
       { key: 'strikingLegTrajectory', label: Strings.scores.strikingLegTrajectory },

@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { VideoData, VideoAngle } from '@/src/types/video';
-import { uploadVideo, buildUploadMeta, UploadVideoResult } from '@/src/services/firebase/storage';
+import { uploadVideo, UploadVideoResult } from '@/src/services/firebase/storage';
 import { updateSessionVideoMeta } from '@/src/services/firebase/firestore';
 import { useAuthStore } from '@/src/stores/authStore';
 
