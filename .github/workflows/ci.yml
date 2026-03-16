@@ -58,3 +58,6 @@ jobs:
 
       - name: Build preview
         run: eas build --platform all --profile preview --non-interactive
+
+env:
+  EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
