@@ -1,13 +1,13 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import NetInfo, { NetInfoState } from '@react-native-community/netinfo';
 import { syncPendingSessions, SyncResult } from '@/src/services/local/syncService';
-import { createSession } from '@/src/services/firebase/firestore';
-import { updateSessionAnalysis } from '@/src/services/firebase/firestore';
+import { createSession, updateSessionAnalysis, updateSessionVideoMeta } from '@/src/services/firebase/firestore';
+import { uploadVideo } from '@/src/services/firebase/storage';
 import { getPendingCount } from '@/src/services/local/offlineStore';
 
 /**
  * Hook qui écoute le retour de connexion réseau et synchronise
- * les séances hors-ligne en attente.
+ * les séances hors-ligne en attente (données + vidéos).
  *
  * Doit être monté dans un composant qui persiste tant que l'utilisateur
  * est authentifié (ex: tabs layout).
@@ -31,6 +31,8 @@ export function useOfflineSync() {
       const result = await syncPendingSessions({
         saveSession: createSession,
         saveAnalysis: updateSessionAnalysis,
+        uploadVideo,
+        updateVideoMeta: updateSessionVideoMeta,
       });
 
       setLastSyncResult(result);
